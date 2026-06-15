@@ -178,8 +178,8 @@ bun --env-file=../../.env run dev --port 4200
 ## Agent DID
 
 ```
-Agent ETH Address: 0x171a19881db8bc543752abb94047a894e957f350
-Agent DID:         did:t3n:189f1ffd70bbf6123ee091b0e0679602ff6219d3
+Agent ETH Address: 0x105a4e13e0262420487244573f5e6a68fb8a57e4
+Agent DID:         did:t3n:105a4e13e0262420487244573f5e6a68fb8a57e4
 Network:           testnet (cn-api.sg.testnet.t3n.terminal3.io)
 Tenant:            medagent-health
 ```
