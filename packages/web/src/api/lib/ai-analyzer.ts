@@ -74,7 +74,7 @@ Analyze these symptoms and provide structured medical guidance.`;
         "Authorization": `Bearer ${AI_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userMessage },
