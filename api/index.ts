@@ -1,8 +1,12 @@
 /**
- * Vercel Serverless Function entry point.
- * Wraps the Hono app with the official hono/vercel adapter.
+ * Vercel Serverless Function — minimal test
  */
+import { Hono } from "hono";
 import { handle } from "hono/vercel";
-import app from "../packages/web/src/api/index";
+
+const app = new Hono().basePath("/api");
+
+app.get("/ping", (c) => c.json({ message: `Pong! ${Date.now()}` }));
+app.get("/health-check", (c) => c.json({ status: "ok", service: "T3 MedAgent" }));
 
 export default handle(app);
