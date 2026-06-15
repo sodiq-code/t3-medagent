@@ -19,13 +19,15 @@
     "db:migrate": "turbo db:migrate",
     "db:push": "turbo db:push",
     "db:studio": "turbo db:studio",
-    "kill:port": "lsof -t -i :${PORT:-4200} | xargs kill -9"
+    "kill:port": "lsof -t -i :${PORT:-4200} | xargs kill -9",
+    "build:api": "node build-api.mjs"
   },
   "devDependencies": {
     "@tursodatabase/api": "^1.9.2",
     "@types/bun": "latest",
     "oxlint": "^1.66.0",
-    "turbo": "^2"
+    "turbo": "^2",
+    "esbuild": "^0.25.0"
   },
   "peerDependencies": {
     "typescript": "^5"

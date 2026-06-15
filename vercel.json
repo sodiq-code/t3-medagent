@@ -1,8 +1,13 @@
 {
-  "buildCommand": "cd packages/web && bunx vite build && (cp -f ../health-contract/health-contract.wasm dist/health-contract.wasm 2>/dev/null || true)",
+  "buildCommand": "bun run build:api && cd packages/web && bunx vite build && (cp -f ../health-contract/health-contract.wasm dist/health-contract.wasm 2>/dev/null || true)",
   "outputDirectory": "packages/web/dist",
   "installCommand": "bun install",
   "framework": null,
+  "functions": {
+    "api/index.mjs": {
+      "runtime": "nodejs22.x"
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" }
   ],
