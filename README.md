@@ -222,3 +222,4 @@ While building T3 MedAgent we hit **7 real SDK bugs and documentation gaps** —
 ---
 
 *Built with Terminal 3 SDK v3.5.2 | June 2026*
+
