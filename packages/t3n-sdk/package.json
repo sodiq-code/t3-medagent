@@ -1,0 +1,67 @@
+{
+  "name": "@terminal3/t3n-sdk",
+  "version": "3.5.2",
+  "type": "module",
+  "description": "T3n TypeScript SDK - A minimal SDK that mirrors the server's RPC handler approach",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    },
+    "./wasm/generated/session.js": "./dist/wasm/generated/session.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "t3n",
+    "blockchain",
+    "sdk",
+    "typescript",
+    "wasm",
+    "cryptography",
+    "authentication"
+  ],
+  "author": "T3n Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Terminal-3/trinity",
+    "directory": "client/t3n-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/Terminal-3/trinity/issues"
+  },
+  "homepage": "https://github.com/Terminal-3/trinity/tree/main/client/t3n-sdk#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.5.0"
+  },
+  "dependencies": {
+    "@bytecodealliance/jco": "^1.17.6",
+    "@bytecodealliance/preview2-shim": "^0.17.8",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "canonicalize": "^3.0.0",
+    "ethers": "^6.16.0"
+  },
+  "t3n": {
+    "packMode": "public",
+    "supportedEnvironments": [
+      "testnet",
+      "production"
+    ]
+  },
+  "private": true
+}
