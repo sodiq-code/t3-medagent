@@ -1,58 +1,76 @@
 /**
- * Mock Hospital Booking API
- *
- * Simulates a real hospital appointment booking service.
- * T3 MedAgent calls this after a high/critical risk analysis to demonstrate
- * real HTTP-with-placeholders integration — judges care the flow works end-to-end.
- *
- * Endpoints:
- *   POST /api/hospital/book      — book an appointment
- *   GET  /api/hospital/slots     — list available slots
- *   GET  /api/hospital/booking/:id — get booking status
+ * Hospital API — 1,200+ global hospital database
+ * Powers intelligent appointment matching by specialty, region, country
  */
 
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { generateUUID } from "../lib/utils";
+import { HOSPITALS, findHospitals, generateSlots, TOTAL_HOSPITALS, type Hospital } from "../data/hospitals";
 
-// In-memory store (demo only — resets on restart)
+// In-memory booking store (demo — resets on restart)
 const bookings: Map<string, {
   id: string;
   patientDid: string;
   riskLevel: string;
+  hospitalId: string;
+  hospitalName: string;
   specialist: string;
   slot: string;
   status: "confirmed" | "pending" | "cancelled";
   createdAt: number;
   hospitalRef: string;
+  city: string;
+  country: string;
+  address: string;
 }> = new Map();
 
-const SPECIALISTS: Record<string, string[]> = {
-  critical: ["Emergency Department", "Cardiology", "Intensive Care"],
-  high: ["General Practice", "Internal Medicine", "Pulmonology"],
-  medium: ["General Practice", "Family Medicine"],
-  low: ["General Practice", "Telehealth"],
-};
-
-const SLOTS = [
-  "2026-06-16T09:00:00Z", "2026-06-16T10:30:00Z", "2026-06-16T14:00:00Z",
-  "2026-06-17T08:30:00Z", "2026-06-17T11:00:00Z", "2026-06-17T15:30:00Z",
-  "2026-06-18T09:30:00Z", "2026-06-18T13:00:00Z",
-];
-
 const hospital = new Hono()
+  // GET /api/hospital/stats — summary stats
+  .get("/stats", (_c) => {
+    return _c.json({
+      total: TOTAL_HOSPITALS,
+      countries: [...new Set(HOSPITALS.map(h => h.country))].length,
+      regions: [...new Set(HOSPITALS.map(h => h.region))].length,
+      emergency: HOSPITALS.filter(h => h.emergency).length,
+      telehealth: HOSPITALS.filter(h => h.tier === "telehealth").length,
+    });
+  })
+
+  // GET /api/hospital/search — search hospitals
+  .get("/search", (c) => {
+    const specialty = c.req.query("specialty");
+    const country = c.req.query("country");
+    const region = c.req.query("region");
+    const emergency = c.req.query("emergency") === "true";
+    const limit = parseInt(c.req.query("limit") ?? "10");
+
+    const results = findHospitals({ specialty, country, region, emergency, limit });
+    return c.json({ hospitals: results, total: results.length }, 200);
+  })
+
   // GET /api/hospital/slots — available appointment slots
   .get("/slots", (c) => {
+    const hospitalId = c.req.query("hospitalId");
     const riskLevel = c.req.query("risk") ?? "low";
-    const specialists = SPECIALISTS[riskLevel] ?? SPECIALISTS.low;
+
+    let h: Hospital | undefined;
+    if (hospitalId) {
+      h = HOSPITALS.find(hosp => hosp.id === hospitalId);
+    }
+
+    const slots = generateSlots(8);
+    const specialist = h ? h.specialties[0] : (riskLevel === "critical" ? "Emergency Department" : "General Practitioner");
+
     return c.json({
-      slots: SLOTS.map((slot, i) => ({
+      hospital: h ?? null,
+      slots: slots.map((slot, i) => ({
         id: `slot-${i + 1}`,
         datetime: slot,
-        specialist: specialists[i % specialists.length],
+        specialist,
         available: true,
-        location: i % 2 === 0 ? "T3 Medical Centre, Block A" : "T3 Telehealth Portal",
+        type: i % 3 === 0 ? "in-person" : i % 3 === 1 ? "telehealth" : "in-person",
       })),
     }, 200);
   })
@@ -61,28 +79,50 @@ const hospital = new Hono()
   .post(
     "/book",
     zValidator("json", z.object({
-      patientDid: z.string().min(3),
+      patientDid: z.string().min(1),
       riskLevel: z.enum(["low", "medium", "high", "critical"]),
       analysisId: z.string(),
+      hospitalId: z.string().optional(),
       preferredSlot: z.string().optional(),
       specialist: z.string().optional(),
+      country: z.string().optional(),
     })),
     (c) => {
       const body = c.req.valid("json");
       const id = generateUUID();
-      const specialists = SPECIALISTS[body.riskLevel] ?? SPECIALISTS.low;
-      const specialist = body.specialist ?? specialists[0];
-      const slot = body.preferredSlot ?? SLOTS[Math.floor(Math.random() * SLOTS.length)];
+
+      // Find best matching hospital
+      const matches = findHospitals({
+        emergency: body.riskLevel === "critical",
+        country: body.country,
+        specialty: body.specialist,
+        limit: 1,
+      });
+
+      let h: Hospital | undefined;
+      if (body.hospitalId) {
+        h = HOSPITALS.find(hosp => hosp.id === body.hospitalId);
+      }
+      h = h ?? matches[0];
+
+      const specialist = body.specialist ?? h?.specialties[0] ?? "General Practitioner";
+      const slots = generateSlots(5);
+      const slot = body.preferredSlot ?? slots[0];
 
       const booking = {
         id,
         patientDid: body.patientDid,
         riskLevel: body.riskLevel,
+        hospitalId: h?.id ?? "unknown",
+        hospitalName: h?.name ?? "T3 Telehealth",
         specialist,
         slot,
         status: "confirmed" as const,
         createdAt: Date.now(),
         hospitalRef: `HOS-${id.slice(0, 8).toUpperCase()}`,
+        city: h?.city ?? "Global",
+        country: h?.country ?? "Worldwide",
+        address: h?.address ?? "Available online",
       };
 
       bookings.set(id, booking);
@@ -90,12 +130,12 @@ const hospital = new Hono()
       return c.json({
         success: true,
         booking,
-        message: `Appointment confirmed with ${specialist} on ${new Date(slot).toLocaleString()}`,
+        message: `Appointment confirmed with ${specialist} at ${booking.hospitalName} on ${new Date(slot).toLocaleString()}`,
         t3Analytics: {
-          trigger: "T3 MedAgent TEE contract result",
+          trigger: "T3 MedAgent AI + TEE analysis",
           analysisId: body.analysisId,
-          contractTail: "health-check",
           protocol: "terminal3-testnet",
+          hospitalDatabase: `${TOTAL_HOSPITALS}+ hospitals`,
         },
       }, 201);
     }
@@ -109,9 +149,9 @@ const hospital = new Hono()
     return c.json({ booking }, 200);
   })
 
-  // GET /api/hospital/bookings — list all (for demo dashboard)
-  .get("/bookings", (c) => {
-    return c.json({ bookings: Array.from(bookings.values()) }, 200);
+  // GET /api/hospital/bookings — list all
+  .get("/bookings", (_c) => {
+    return _c.json({ bookings: Array.from(bookings.values()), total: bookings.size }, 200);
   });
 
 export default hospital;

@@ -13,16 +13,17 @@ import {
   getAgentDid,
   getAgentAddress,
 } from "../lib/t3-agent";
+import { analyzeWithAI } from "../lib/ai-analyzer";
+import { findHospitals } from "../data/hospitals";
 import { sendHealthAlert } from "../lib/sms";
 import { eq } from "drizzle-orm";
 import { generateUUID } from "../lib/utils";
 
 const health = new Hono()
-  // GET /api/health/status — system status + DID (lazy-inits session on first call)
+  // GET /api/health/status — system status + DID
   .get("/status", async (c) => {
     try {
       const address = getAgentAddress();
-      // Lazy-init: auto-authenticate if session not yet started
       let did = getAgentDid();
       if (!did) {
         try { await getT3nClient(); did = getAgentDid(); } catch (_) {}
@@ -40,16 +41,15 @@ const health = new Hono()
     }
   })
 
-  // POST /api/health/init — bootstrap T3 session + claim tenant
+  // POST /api/health/init — bootstrap T3 session
   .post("/init", async (c) => {
     try {
-      await getT3nClient(); // handshake + authenticate
+      await getT3nClient();
       const did = getAgentDid();
       let tenantResult: unknown = null;
       try {
         tenantResult = await claimTenant();
       } catch (e) {
-        // tenant may already be claimed — not fatal
         tenantResult = { status: "already-claimed", note: String(e) };
       }
       return c.json({
@@ -63,7 +63,7 @@ const health = new Hono()
     }
   })
 
-  // POST /api/health/analyze — execute health contract
+  // POST /api/health/analyze — AI + TEE health analysis
   .post(
     "/analyze",
     zValidator("json", z.object({
@@ -72,93 +72,93 @@ const health = new Hono()
       age: z.number().optional(),
       duration_days: z.number().optional(),
       severity: z.enum(["mild", "moderate", "severe"]).optional(),
-      // Optional: patient phone number for SMS alert
+      context: z.string().optional(), // conversation history for AI context
       phone: z.string().optional(),
+      country: z.string().optional(), // for hospital matching
     })),
     async (c) => {
       const body = c.req.valid("json");
       let smsResult: { success: boolean; provider: string; error?: string } | null = null;
+      let usedTee = false;
 
+      // ── Step 1: Try TEE contract first ────────────────────────────────────
+      let teeResult = null;
       try {
-        const result = await executeHealthAnalysis({
+        teeResult = await executeHealthAnalysis({
           symptoms: body.symptoms,
           age: body.age,
           duration_days: body.duration_days,
           severity: body.severity,
         });
+        usedTee = true;
+      } catch (_) {
+        // TEE not available — fall through to AI
+      }
 
-        // Persist to DB
-        const id = generateUUID();
-        await db.insert(analyses).values({
-          id,
-          patientDid: body.patientDid || "anonymous",
-          symptoms: JSON.stringify(body.symptoms),
-          contractResult: JSON.stringify(result),
+      // ── Step 2: AI-powered analysis (real LLM) ────────────────────────────
+      const aiResult = await analyzeWithAI({
+        symptoms: body.symptoms,
+        age: body.age,
+        duration_days: body.duration_days,
+        severity: body.severity,
+        context: body.context,
+      });
+
+      // Merge: TEE risk_level if available, AI recommendation always wins
+      const result = {
+        risk_level: (usedTee && teeResult ? teeResult.risk_level : aiResult.risk_level) as "low" | "medium" | "high" | "critical",
+        recommendation: aiResult.recommendation,
+        specialist_needed: aiResult.specialist_needed,
+        specialist_type: aiResult.specialist_type,
+        confidence: aiResult.confidence,
+        analysis_id: aiResult.analysis_id,
+        differential_diagnoses: aiResult.differential_diagnoses,
+        red_flags: aiResult.red_flags,
+        home_care: aiResult.home_care,
+        follow_up: aiResult.follow_up,
+        powered_by: aiResult.powered_by,
+        tee_verified: usedTee,
+      };
+
+      // ── Step 3: Find matching hospitals ───────────────────────────────────
+      const nearbyHospitals = findHospitals({
+        specialty: result.specialist_type ?? (result.risk_level === "critical" ? "Emergency Department" : undefined),
+        emergency: result.risk_level === "critical",
+        country: body.country,
+        limit: 3,
+      });
+
+      // ── Step 4: Persist to DB ─────────────────────────────────────────────
+      const id = generateUUID();
+      await db.insert(analyses).values({
+        id,
+        patientDid: body.patientDid || "anonymous",
+        symptoms: JSON.stringify(body.symptoms),
+        contractResult: JSON.stringify(result),
+        riskLevel: result.risk_level,
+        recommendation: result.recommendation,
+        contractVersion: usedTee ? "1.0.0" : "1.0.0-ai",
+      }).catch(() => {});
+
+      // ── Step 5: SMS alert ─────────────────────────────────────────────────
+      if (body.phone && (result.risk_level === "high" || result.risk_level === "critical")) {
+        smsResult = await sendHealthAlert({
+          phone: body.phone,
           riskLevel: result.risk_level,
           recommendation: result.recommendation,
-          contractVersion: "1.0.0",
-        });
-
-        // ── SMS Alert: send to patient if phone provided ─────────────────
-        // Best-effort — never blocks the response
-        if (body.phone) {
-          smsResult = await sendHealthAlert({
-            phone: body.phone,
-            riskLevel: result.risk_level,
-            recommendation: result.recommendation,
-            analysisId: result.analysis_id,
-          });
-        }
-
-        // ── Auto-book hospital appointment for high/critical risk ────────
-        let hospitalBooking: unknown = null;
-        if (result.risk_level === "high" || result.risk_level === "critical") {
-          try {
-            const bookRes = await fetch(
-              new URL("/api/hospital/book", c.req.url).toString(),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  patientDid: body.patientDid || "anonymous",
-                  riskLevel: result.risk_level,
-                  analysisId: result.analysis_id,
-                }),
-              }
-            );
-            hospitalBooking = await bookRes.json();
-          } catch {
-            // non-fatal
-          }
-        }
-
-        return c.json({ success: true, id, result, sms: smsResult, hospitalBooking }, 200);
-      } catch (err) {
-        // Contract not deployed yet — return AI-simulated result
-        const simulated = simulateHealthAnalysis(body.symptoms);
-        const id = generateUUID();
-        await db.insert(analyses).values({
-          id,
-          patientDid: body.patientDid || "anonymous",
-          symptoms: JSON.stringify(body.symptoms),
-          contractResult: JSON.stringify(simulated),
-          riskLevel: simulated.risk_level,
-          recommendation: simulated.recommendation,
-          contractVersion: "1.0.0-simulated",
-        }).catch(() => {});
-
-        // SMS for simulated results too (high/critical urgency)
-        if (body.phone && (simulated.risk_level === "high" || simulated.risk_level === "critical")) {
-          smsResult = await sendHealthAlert({
-            phone: body.phone,
-            riskLevel: simulated.risk_level,
-            recommendation: simulated.recommendation,
-            analysisId: simulated.analysis_id,
-          });
-        }
-
-        return c.json({ success: true, id, result: simulated, simulated: true, sms: smsResult }, 200);
+          analysisId: result.analysis_id,
+        }).catch(() => ({ success: false, provider: "none", error: "SMS unavailable" }));
       }
+
+      return c.json({
+        success: true,
+        id,
+        result,
+        hospitals: nearbyHospitals,
+        sms: smsResult,
+        simulated: !usedTee,
+        ai_powered: true,
+      }, 200);
     }
   )
 
@@ -178,38 +178,3 @@ const health = new Hono()
   });
 
 export default health;
-
-// ─── Simulation fallback (when contract not yet deployed) ────────────────────
-function simulateHealthAnalysis(symptoms: string[]): {
-  risk_level: "low" | "medium" | "high" | "critical";
-  recommendation: string;
-  specialist_needed: boolean;
-  confidence: number;
-  analysis_id: string;
-} {
-  const critical = ["chest pain", "difficulty breathing", "loss of consciousness"];
-  const high = ["severe headache", "high fever", "vomiting blood"];
-  const medium = ["persistent cough", "dizziness", "abdominal pain"];
-
-  const lower = symptoms.map(s => s.toLowerCase());
-  let risk_level: "low" | "medium" | "high" | "critical" = "low";
-
-  if (lower.some(s => critical.some(c => s.includes(c)))) risk_level = "critical";
-  else if (lower.some(s => high.some(h => s.includes(h)))) risk_level = "high";
-  else if (lower.some(s => medium.some(m => s.includes(m)))) risk_level = "medium";
-
-  const recommendations: Record<string, string> = {
-    critical: "EMERGENCY: Seek immediate medical attention. Call emergency services now.",
-    high: "See a doctor within 24 hours. Monitor symptoms closely.",
-    medium: "Schedule a medical appointment within the next few days.",
-    low: "Rest, hydrate, and monitor symptoms. Consult a doctor if symptoms persist >3 days.",
-  };
-
-  return {
-    risk_level,
-    recommendation: recommendations[risk_level],
-    specialist_needed: risk_level === "critical" || risk_level === "high",
-    confidence: 0.82,
-    analysis_id: `sim-${Date.now()}`,
-  };
-}
