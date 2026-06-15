@@ -1,12 +1,9 @@
 /**
- * Vercel Serverless Function — minimal test
+ * Vercel Edge Function — T3 MedAgent API
  */
-import { Hono } from "hono";
 import { handle } from "hono/vercel";
+import app from "../packages/web/src/api/index";
 
-const app = new Hono().basePath("/api");
-
-app.get("/ping", (c) => c.json({ message: `Pong! ${Date.now()}` }));
-app.get("/health-check", (c) => c.json({ status: "ok", service: "T3 MedAgent" }));
+export const config = { runtime: "edge" };
 
 export default handle(app);

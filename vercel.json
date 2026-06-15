@@ -6,9 +6,10 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" }
   ],
-  "functions": {
-    "api/index.ts": {
-      "runtime": "nodejs22.x"
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [{ "key": "x-powered-by", "value": "T3-MedAgent" }]
     }
-  }
+  ]
 }
