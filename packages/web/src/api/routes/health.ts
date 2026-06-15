@@ -17,16 +17,21 @@ import { eq } from "drizzle-orm";
 import { generateUUID } from "../lib/utils";
 
 const health = new Hono()
-  // GET /api/health/status — system status + DID
+  // GET /api/health/status — system status + DID (lazy-inits session on first call)
   .get("/status", async (c) => {
     try {
       const address = getAgentAddress();
-      const did = getAgentDid();
+      // Lazy-init: auto-authenticate if session not yet started
+      let did = getAgentDid();
+      if (!did) {
+        try { await getT3nClient(); did = getAgentDid(); } catch (_) {}
+      }
       return c.json({
         status: "online",
         agentAddress: address,
         agentDid: did,
         network: "testnet",
+        nodeUrl: "https://cn-api.sg.testnet.t3n.terminal3.io",
         timestamp: Date.now(),
       }, 200);
     } catch (err) {
