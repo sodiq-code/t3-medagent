@@ -4,6 +4,7 @@ import health from './routes/health';
 import onboard from './routes/onboard';
 import audit from './routes/audit';
 import delegate from './routes/delegate';
+import hospital from './routes/hospital';
 
 const app = new Hono()
   .basePath('api')
@@ -13,7 +14,8 @@ const app = new Hono()
   .route('/health', health)
   .route('/onboard', onboard)
   .route('/audit', audit)
-  .route('/delegate', delegate);
+  .route('/delegate', delegate)
+  .route('/hospital', hospital);
 
 export type AppType = typeof app;
 export default app;

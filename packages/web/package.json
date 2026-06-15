@@ -6,7 +6,7 @@
     ".": "./src/api/index.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit && vite build && cp -f ../health-contract/health-contract.wasm dist/health-contract.wasm 2>/dev/null || true",
+    "build": "tsc --noEmit && vite build && (cp -f ../health-contract/target/wasm32-wasip2/release/health_contract.wasm dist/health-contract.wasm 2>/dev/null || cp -f ../health-contract/health-contract.wasm dist/health-contract.wasm 2>/dev/null || true)",
     "dev": "vite",
     "start": "bun src/server.ts",
     "typecheck": "tsc --noEmit",

@@ -9,9 +9,13 @@ async function bootPublishContract() {
   const wasmPaths = [
     // Deployed alongside server (copied by build)
     resolve(import.meta.dir, "health-contract.wasm"),
-    // Monorepo sibling package
+    // Compiled Rust target (cargo build --target wasm32-wasip2 --release)
+    resolve(import.meta.dir, "../../health-contract/target/wasm32-wasip2/release/health_contract.wasm"),
+    // Monorepo sibling package (pre-built fallback)
     resolve(import.meta.dir, "../../../health-contract/health-contract.wasm"),
     resolve(import.meta.dir, "../../health-contract/health-contract.wasm"),
+    // Contracts dir (development copy)
+    resolve(import.meta.dir, "api/contracts/health_contract.wasm"),
   ];
 
   let wasmBytes: Uint8Array | null = null;

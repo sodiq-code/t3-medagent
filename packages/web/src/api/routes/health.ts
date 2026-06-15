@@ -110,7 +110,29 @@ const health = new Hono()
           });
         }
 
-        return c.json({ success: true, id, result, sms: smsResult }, 200);
+        // ── Auto-book hospital appointment for high/critical risk ────────
+        let hospitalBooking: unknown = null;
+        if (result.risk_level === "high" || result.risk_level === "critical") {
+          try {
+            const bookRes = await fetch(
+              new URL("/api/hospital/book", c.req.url).toString(),
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  patientDid: body.patientDid || "anonymous",
+                  riskLevel: result.risk_level,
+                  analysisId: result.analysis_id,
+                }),
+              }
+            );
+            hospitalBooking = await bookRes.json();
+          } catch {
+            // non-fatal
+          }
+        }
+
+        return c.json({ success: true, id, result, sms: smsResult, hospitalBooking }, 200);
       } catch (err) {
         // Contract not deployed yet — return AI-simulated result
         const simulated = simulateHealthAnalysis(body.symptoms);
