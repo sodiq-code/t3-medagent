@@ -5,6 +5,32 @@
 
 ---
 
+## Deployment (Railway)
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template)
+
+This app runs on **Railway** using Bun natively — no serverless adapter, no Edge limits, full TypeScript + WASM support out of the box.
+
+```bash
+# 1. Push to GitHub (already done)
+# 2. Go to https://railway.app → New Project → Deploy from GitHub repo
+# 3. Set environment variables (see below)
+# 4. Railway auto-detects Dockerfile and deploys
+```
+
+### Required Environment Variables
+
+| Variable | Description |
+|---|---|
+| `T3N_AGENT_PRIVATE_KEY` | Agent wallet private key (0x...) |
+| `T3N_NODE_URL` | T3 testnet node URL |
+| `DATABASE_URL` | Turso libSQL URL (libsql://...) |
+| `DATABASE_AUTH_TOKEN` | Turso auth token |
+| `AI_GATEWAY_BASE_URL` | Groq/OpenAI-compatible base URL |
+| `AI_GATEWAY_API_KEY` | AI gateway API key |
+| `PORT` | Auto-set by Railway (do not override) |
+
+
 ## Overview
 
 T3 MedAgent is a full-stack AI health agent that runs symptom analysis inside a **Trusted Execution Environment (TEE)** using the Terminal 3 network. Patient data is cryptographically sealed — the agent never exposes raw health inputs outside the TEE.
