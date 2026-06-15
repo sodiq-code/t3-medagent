@@ -1,49 +1,65 @@
-# T3 MedAgent — Build Progress
+# Vercel Deployment — Status
 
-## Status: CORE WORKING ✅
+## ✅ DONE
 
-### Completed
-- [x] T3 SDK installed (workspace package)
-- [x] `t3-agent.ts` — all 17 SDK primitives, lazy env readers, correct signatures
-  - `buildInvocationPreimage(vcId: Uint8Array, nonce: Uint8Array, reqHash: Uint8Array)` ✅
-  - `signAgentInvocation(preimage, secret)` ✅
-  - `canonicaliseCredential` — static import ✅
-  - NONCE_LEN=16, REQUEST_HASH_LEN=32, VC_ID_LEN=16, AGENT_PUBKEY_LEN=33 ✅
-  - Lazy env readers (privKey, nodeUrl, scriptName) — fixes Vite SSR init-time issue ✅
-  - DID unwrap: `d.did ?? d.value` ✅
-- [x] DB schema pushed to Turso ✅
-- [x] Correct T3 testnet URL: `https://cn-api.sg.testnet.t3n.terminal3.io` ✅
-- [x] TypeScript: 0 errors ✅
-- [x] Dev server: port 4200 ✅
-- [x] API endpoints verified:
-  - GET  /api/health/status  → agentAddress populated ✅
-  - POST /api/health/init    → DID = did:t3n:189f... ✅
-  - POST /api/health/analyze → simulation result ✅
-  - POST /api/delegate/create → credential + DB insert ✅
-- [x] BigInt JSON serialization fix in delegate route ✅
+1. **`vercel.json`** — created at repo root
+   - buildCommand: `cd packages/web && vite build && cp wasm || true`
+   - outputDirectory: `packages/web/dist`
+   - installCommand: `bun install`
+   - rewrites: `/api/*` → `api/index` serverless function
+   - runtime: nodejs22.x
 
-### In Progress
-- [ ] Test /api/onboard/*, /api/audit/* endpoints
-- [ ] Verify all 6 frontend pages render correctly
-- [ ] Write README.md for DoraHacks submission
-- [ ] Push to GitHub (sodiq-code/t3-medagent)
-- [ ] Optional: Rust WASM health contract
+2. **`api/index.ts`** — Vercel serverless entry point
+   - Uses `hono/vercel` adapter (`handle(app)`)
+   - Imports Hono app from `packages/web/src/api/index.ts`
 
-### Known Issues
-- DelegationCredential `user_did` shows agent address DID (not post-auth DID) 
-  because delegation is called before /health/init — acceptable for demo
-- tenant.claim() returns "already-claimed" — tenant exists, not an error
-- contracts.execute() falls back to simulation (testnet TEE may not have contract deployed)
+3. **`@terminal3/t3n-sdk` workspace stub → npm `^3.6.0`**
+   - Was: `workspace:../t3n-sdk` (no dist, broken)
+   - Now: real npm v3.6.0 with dist/
+   - Fixed in: `packages/web/package.json`
 
-### Key Constants (SDK)
-- NONCE_LEN = 16
-- VC_ID_LEN = 16  
-- REQUEST_HASH_LEN = 32
-- AGENT_PUBKEY_LEN = 33
-- buildInvocationPreimage(vcId, nonce, reqHash) — 3 positional args
-- signAgentInvocation(preimage, secret) — 2 args
+4. **Vite build passes** — 2.62s, 1829 modules, no errors
 
-### T3 Testnet
-- URL: https://cn-api.sg.testnet.t3n.terminal3.io
-- Agent DID: did:t3n:189f1ffd70bbf6123ee091b0e0679602ff6219d3
-- Agent ETH: 0x171a19881db8bc543752abb94047a894e957f350
+---
+
+## ⚠️ REQUIRED: Vercel Environment Variables
+
+Set these in Vercel Dashboard → Project → Settings → Environment Variables:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | ✅ CRITICAL | Must be `libsql://...turso.io` remote URL, NOT `file:./dev.db` |
+| `DATABASE_AUTH_TOKEN` | ✅ CRITICAL | Turso auth token |
+| `T3N_AGENT_PRIVATE_KEY` | ✅ CRITICAL | Hex private key for T3 agent wallet |
+| `T3N_NODE_URL` | Optional | Defaults to `https://cn-api.sg.testnet.t3n.terminal3.io` |
+| `T3N_TENANT_SCRIPT_NAME` | Optional | Defaults to `medagent-health` |
+| `AI_GATEWAY_BASE_URL` | Optional | AI proxy base URL |
+| `AI_GATEWAY_API_KEY` | Optional | AI proxy key |
+
+---
+
+## ℹ️ KNOWN RUNTIME BEHAVIORS ON VERCEL
+
+- **WASM contract boot** (`bootPublishContract`) — only ran in `server.ts` (Bun),
+  which is NOT used on Vercel. The serverless entry goes directly to the Hono app.
+  The WASM contract will NOT auto-publish on cold start. Routes gracefully fall back
+  to simulation mode if contract hasn't been published.
+
+- **Singleton clients** (`_t3nClient`, `_tenantClient`) — reset on every cold start
+  (serverless is stateless). This is fine; they re-initialize on demand.
+
+- **DB connection** — `@libsql/client` works with Turso remote URLs in Node.js.
+  Will fail if `DATABASE_URL` is unset or points to a local file.
+
+---
+
+## DEPLOYMENT STEPS
+
+1. Push to GitHub
+2. Connect repo to Vercel (or `vercel --prod` CLI)
+3. Set all env vars above in Vercel dashboard
+4. Deploy — Vercel will run `bun install` then the build command
+5. Run DB migrations on Turso:
+   ```
+   cd packages/web && bun run db:migrate
+   ```

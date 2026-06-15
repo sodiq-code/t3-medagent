@@ -23,7 +23,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@runablehq/website-runtime": "^0.10.0",
     "@tanstack/react-query": "^5.100.6",
-    "@terminal3/t3n-sdk": "workspace:../t3n-sdk",
+    "@terminal3/t3n-sdk": "^3.6.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
