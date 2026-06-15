@@ -304,7 +304,10 @@ export async function sendOtp(email?: string, phone?: string): Promise<string> {
     ? { emailChannel: { emailAddress: email } }
     : { smsChannel: { phoneNumber: phone! } };
   const result = await client.otpRequest(channel as Parameters<typeof client.otpRequest>[0]);
-  return (result as { requestId?: string }).requestId ?? "sent";
+  // BUG-02 FIX: OtpRequestResult has no requestId field.
+  // txHash is the on-chain proof of OTP dispatch — use that as the correlation handle.
+  // Verify by re-passing the original channel shape to otpVerify(), not an ID.
+  return (result as { txHash?: string }).txHash ?? "sent";
 }
 
 export async function verifyOtp(otpCode: string, email?: string, phone?: string): Promise<boolean> {
@@ -316,8 +319,11 @@ export async function verifyOtp(otpCode: string, email?: string, phone?: string)
     otpCode,
     request: channel as Parameters<typeof client.otpVerify>[0]["request"],
   });
-  const r = result as { verified?: boolean; status?: string };
-  return r.verified === true || r.status === "verified";
+  const r = result as { verified?: boolean; status?: string; did?: string };
+  // BUG-03 FIX: OtpVerifyResult has no `verified` boolean and no `status === "verified"`.
+  // Success = status is absent (undefined). Failure = status is "otp_failed".
+  // Presence of `did` also confirms successful identity binding.
+  return !r.status || Boolean(r.did);
 }
 
 // ─── Primitive 16: submitUserInput ───────────────────────────────────────────
@@ -358,7 +364,9 @@ export async function verifyNodeAttestation(): Promise<{
       attestation.peer_ids,
       attestation.quotes
     );
-    return { valid: result.overall_valid, result };
+    // BUG-01 FIX: DkgVerifyResult uses `valid` (not `overall_valid`) as the aggregate boolean.
+    // `valid_count` and `expected_count` are peer-level counts, not the top-level result.
+    return { valid: result.valid, result };
   } catch (err) {
     return {
       valid: false,

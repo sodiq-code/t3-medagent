@@ -156,6 +156,26 @@ Tenant:            medagent-health
 
 ---
 
+## SDK Bug Report (Bonus)
+
+While building T3 MedAgent we hit **7 real SDK bugs and documentation gaps** — three of which caused silent runtime failures in our production code. All have been documented with type-level proof, real code examples showing the wrong pattern, and the correct fix applied.
+
+**→ [Read the full bug report: BUG_REPORT.md](./BUG_REPORT.md)**
+
+| Bug | Severity | Description |
+|-----|----------|-------------|
+| BUG-01 | 🔴 High | `DkgVerifyResult.overall_valid` doesn't exist — should be `.valid` |
+| BUG-02 | 🔴 High | `OtpRequestResult` has no `requestId` — verify correlation undocumented |
+| BUG-03 | 🔴 High | `OtpVerifyResult` has no `verified` field — success detection undocumented |
+| BUG-04 | 🟡 Medium | `MapVisibility` is untyped `string` — valid values undocumented |
+| BUG-05 | 🟡 Medium | SMS OTP silently fails without prior email verification (critical for Africa) |
+| BUG-06 | 🟡 Medium | `contracts.publish()` vs `contracts.register()` — identical signatures, zero docs |
+| BUG-07 | 🔵 Low | `authenticate()` returns `Did` object not `string` — causes `[object Object]` bugs |
+| DOC-GAP-01 | 🔵 High | No end-to-end delegation flow example across 5 chained functions |
+| DOC-GAP-02 | 🔵 Low | `NODE_URLS` values not shown anywhere in docs |
+
+---
+
 ## Why T3 MedAgent Wins
 
 1. **Highest SDK depth** — 17 primitives + 6 supporting functions, all exercised in real flows
