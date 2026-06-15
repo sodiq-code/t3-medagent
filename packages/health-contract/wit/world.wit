@@ -1,0 +1,10 @@
+package t3-medagent:health-contract@1.0.0;
+
+/// Health analysis contract interface
+world health-world {
+  /// Analyse a JSON-encoded symptom payload and return a risk assessment
+  export analyze-symptoms: func(input: string) -> string;
+
+  /// Generate a structured health report for a patient DID
+  export generate-report: func(patient-id: string) -> string;
+}

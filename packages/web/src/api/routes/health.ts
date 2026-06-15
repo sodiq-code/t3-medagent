@@ -13,6 +13,7 @@ import {
   getAgentDid,
   getAgentAddress,
 } from "../lib/t3-agent";
+import { sendHealthAlert } from "../lib/sms";
 import { eq } from "drizzle-orm";
 import { generateUUID } from "../lib/utils";
 
@@ -71,9 +72,13 @@ const health = new Hono()
       age: z.number().optional(),
       duration_days: z.number().optional(),
       severity: z.enum(["mild", "moderate", "severe"]).optional(),
+      // Optional: patient phone number for SMS alert
+      phone: z.string().optional(),
     })),
     async (c) => {
       const body = c.req.valid("json");
+      let smsResult: { success: boolean; provider: string; error?: string } | null = null;
+
       try {
         const result = await executeHealthAnalysis({
           symptoms: body.symptoms,
@@ -94,7 +99,18 @@ const health = new Hono()
           contractVersion: "1.0.0",
         });
 
-        return c.json({ success: true, id, result }, 200);
+        // ── SMS Alert: send to patient if phone provided ─────────────────
+        // Best-effort — never blocks the response
+        if (body.phone) {
+          smsResult = await sendHealthAlert({
+            phone: body.phone,
+            riskLevel: result.risk_level,
+            recommendation: result.recommendation,
+            analysisId: result.analysis_id,
+          });
+        }
+
+        return c.json({ success: true, id, result, sms: smsResult }, 200);
       } catch (err) {
         // Contract not deployed yet — return AI-simulated result
         const simulated = simulateHealthAnalysis(body.symptoms);
@@ -108,7 +124,18 @@ const health = new Hono()
           recommendation: simulated.recommendation,
           contractVersion: "1.0.0-simulated",
         }).catch(() => {});
-        return c.json({ success: true, id, result: simulated, simulated: true }, 200);
+
+        // SMS for simulated results too (high/critical urgency)
+        if (body.phone && (simulated.risk_level === "high" || simulated.risk_level === "critical")) {
+          smsResult = await sendHealthAlert({
+            phone: body.phone,
+            riskLevel: simulated.risk_level,
+            recommendation: simulated.recommendation,
+            analysisId: simulated.analysis_id,
+          });
+        }
+
+        return c.json({ success: true, id, result: simulated, simulated: true, sms: smsResult }, 200);
       }
     }
   )

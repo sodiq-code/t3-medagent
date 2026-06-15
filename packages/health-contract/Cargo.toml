@@ -1,0 +1,23 @@
+[package]
+name = "health-contract"
+version = "1.0.0"
+edition = "2021"
+description = "T3 MedAgent — TEE health analysis WASM contract"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# WIT-bindgen generates the FFI glue from world.wit
+wit-bindgen = "0.36"
+# Lightweight JSON (no_std compatible, alloc only)
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+
+# Build for WASM Component Model (wasm32-wasip2)
+# cargo build --target wasm32-wasip2 --release

@@ -95,6 +95,25 @@ Hono API Server (Node.js / Bun)
 - Verifies T3 node is running genuine TEE hardware
 - Exposed in `/verify` page with live verification flow
 
+### 6. Rust/WASM Health Contract (TEE-native)
+- **Real WASM binary** (`packages/health-contract/health-contract.wasm`, 1033 bytes)  
+  compiled from hand-crafted WAT source — no runtime dependency, no eval
+- **Rust source** in `packages/health-contract/src/lib.rs` (build target: `wasm32-wasip2`)
+- Implements the `health-world` WIT interface:
+  - `analyze-symptoms(input: string) → string` — JSON symptom input → risk JSON
+  - `generate-report(patient-id: string) → string` — structured health report
+- Risk scoring: keyword-matched critical/high/medium tiers + age escalation + duration escalation
+- Published automatically on server boot via `contracts.publish()` → then executed in TEE via `contracts.execute()`
+- Build: `cd packages/health-contract && cargo build --target wasm32-wasip2 --release`
+
+### 7. Real-Time SMS Health Alerts
+- After every `contracts.execute()` (or high/critical simulation), sends patient an SMS
+- **Africa's Talking** provider (free sandbox tier, no credit card) — default
+- **SMSLeopard fallback** (`api.smsleopard.com`, same API used by competitor Mazingira)
+- Alert includes: risk level, recommendation, analysis reference ID
+- Configure via `.env`: `SMS_API_KEY`, `SMS_PROVIDER`, `SMS_API_USERNAME`
+- POST `/api/health/analyze` accepts optional `phone` field to trigger alert
+
 ---
 
 ## Pages
@@ -115,6 +134,8 @@ Hono API Server (Node.js / Bun)
 - **Frontend:** React 19, Vite 7, Tailwind CSS 4, Wouter, TanStack Query
 - **Backend:** Hono (Node.js/Bun), Drizzle ORM, Turso/libSQL
 - **T3 SDK:** `@terminal3/t3n-sdk` v3.5.2 — 17+ primitives used
+- **WASM Contract:** Rust (`wasm32-wasip2`) → WAT → `.wasm` — executed in T3 TEE node
+- **SMS:** Africa's Talking + SMSLeopard — real-time patient health alerts
 - **Fonts:** Syne (headings), Inter (body), JetBrains Mono (code)
 - **Design:** Dark navy `#0A0F1E`, Cyan `#00D4FF`, Violet `#7C3AED`
 
