@@ -3,6 +3,28 @@ import { publishHealthContract } from "./api/lib/t3-agent";
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
+// ─── Guard: prevent Worker/WASM shim crashes from killing the server ──────────
+// @bytecodealliance/preview2-shim spawns a worker that calls process.binding("tcp_wrap")
+// which is not implemented in Bun. We catch it here to keep the server alive.
+process.on("uncaughtException", (err: Error) => {
+  if (String(err.message).includes("tcp_wrap") || String(err.message).includes("not implemented in Bun")) {
+    console.warn("[T3] Worker shim error (non-fatal, server continues):", err.message);
+    return;
+  }
+  // Re-throw anything else that's genuinely fatal
+  console.error("[FATAL] Uncaught exception:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason: unknown) => {
+  const msg = String(reason);
+  if (msg.includes("tcp_wrap") || msg.includes("not implemented in Bun")) {
+    console.warn("[T3] Worker shim rejection (non-fatal):", msg);
+    return;
+  }
+  console.error("[WARN] Unhandled rejection:", reason);
+});
+
 // ─── Boot: auto-publish WASM health contract to T3 TEE ───────────────────────
 // Runs once after server starts. Failures are non-fatal (simulation fallback).
 async function bootPublishContract() {
