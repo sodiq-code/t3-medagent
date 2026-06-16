@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { db } from "../database";
-import { analyses, sessions, patients } from "../database/schema";
+import { analyses, sessions, patients, auditEvents } from "../database/schema";
 import {
   getT3nClient,
   getTenantClient,
@@ -139,6 +139,44 @@ const health = new Hono()
         recommendation: result.recommendation,
         contractVersion: usedTee ? "1.0.0" : "1.0.0-ai",
       }).catch(() => {});
+
+      // ── Step 4b: Write audit events ──────────────────────────────────────
+      const now = Date.now();
+      const auditEntries = [
+        {
+          id: generateUUID(),
+          patientDid: body.patientDid || "anonymous",
+          contractTail: "health-check",
+          functionName: "analyze-symptoms",
+          level: "info" as const,
+          message: `Health analysis requested — symptoms: ${body.symptoms.join(", ")}`,
+          tsMs: now - 2,
+          spanId: null,
+        },
+        {
+          id: generateUUID(),
+          patientDid: body.patientDid || "anonymous",
+          contractTail: "health-check",
+          functionName: "analyze-symptoms",
+          level: result.risk_level === "critical" || result.risk_level === "high" ? "error" as const : "info" as const,
+          message: `Analysis complete — risk: ${result.risk_level.toUpperCase()}, confidence: ${Math.round(result.confidence * 100)}%, specialist: ${result.specialist_needed ? "yes" : "no"}, tee_verified: ${result.tee_verified}`,
+          tsMs: now - 1,
+          spanId: null,
+        },
+        {
+          id: generateUUID(),
+          patientDid: body.patientDid || "anonymous",
+          contractTail: "health-check",
+          functionName: "store-result",
+          level: "debug" as const,
+          message: `Result persisted — analysis_id: ${result.analysis_id}, powered_by: ${result.powered_by}`,
+          tsMs: now,
+          spanId: null,
+        },
+      ];
+      for (const entry of auditEntries) {
+        await db.insert(auditEvents).values(entry).catch(() => {});
+      }
 
       // ── Step 5: SMS alert ─────────────────────────────────────────────────
       if (body.phone && (result.risk_level === "high" || result.risk_level === "critical")) {
