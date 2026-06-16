@@ -6,9 +6,12 @@
 ![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)
 ![Hono](https://img.shields.io/badge/Hono-E36002?style=flat&logo=hono&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
-![SQLite](https://img.shields.io/badge/Turso_libSQL-4F46E5?style=flat&logo=sqlite&logoColor=white)
+![Turso](https://img.shields.io/badge/Turso_libSQL-4F46E5?style=flat&logo=sqlite&logoColor=white)
 ![WebAssembly](https://img.shields.io/badge/WASM-654FF0?style=flat&logo=webassembly&logoColor=white)
 ![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=black)
+![T3 SDK](https://img.shields.io/badge/T3_SDK-v3.5.2-00D4FF?style=flat&logoColor=white)
+![SDK Primitives](https://img.shields.io/badge/SDK_Primitives-17%2F17-10B981?style=flat&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=flat)
 
 > **Built for the Terminal 3 ADK Bounty Challenge (Launch Ed.)**  
 > Track: **Healthcare / Privacy-First AI Agents**  
@@ -273,7 +276,7 @@ During development, **9 SDK bugs and documentation gaps** were encountered — t
 
 ---
 
-## Why T3 MedAgent Wins
+## Key Technical Highlights
 
 1. **Highest SDK depth** — 17 primitives + 9 supporting functions, all in real production flows
 2. **Domain fit** — healthcare is the #1 TEE use case: HIPAA-adjacent data stays encrypted in hardware
