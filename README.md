@@ -1,41 +1,55 @@
 # T3 MedAgent — Privacy-Preserving AI Health Navigator
 
-> **Built for the Terminal 3 ADK Bounty Challenge (Launch Ed)**  
-> Track: Healthcare / Privacy-First AI Agents
+> **Built for the Terminal 3 ADK Bounty Challenge (Launch Ed.)**  
+> Track: **Healthcare / Privacy-First AI Agents**  
+> SDK Coverage: **17 Primitives** · Deploy: **Render** · Stack: Bun · Hono · React · Turso
+
+**Live Demo:** https://t3-medagent.onrender.com
 
 ---
 
-## Deployment (Railway)
+## Screenshots
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template)
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="screenshots/clean/01-landing.png" alt="T3 MedAgent landing page" />
+<br/><sub><b>Landing — Hero</b> · 17 T3 SDK Primitives badge, TEE execution stats, 163+ on-chain audit txns</sub>
+</td>
+<td align="center" width="50%">
+<img src="screenshots/clean/03-landing-17primitives.png" alt="Full SDK Coverage — all 17 primitives grid" />
+<br/><sub><b>Full SDK Coverage</b> · All 17 T3 primitives shown as checked in the landing page SDK grid</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+<img src="screenshots/clean/04-onboard-step1.png" alt="Patient onboarding OTP identity flow" />
+<br/><sub><b>Patient Onboarding</b> · OTP identity verification via <code>otpRequest</code> + <code>otpVerify</code>. SDK calls shown live in left panel</sub>
+</td>
+<td align="center" width="50%">
+<img src="screenshots/clean/10-dashboard-active-chat.png" alt="AI health agent dashboard with TEE analysis result" />
+<br/><sub><b>Health Console</b> · AI symptom analysis running in TEE — MEDIUM RISK result, 80% confidence, Agent DID visible in sidebar</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+<img src="screenshots/clean/13-audit-populated.png" alt="On-chain audit log with live contracts.logs() data" />
+<br/><sub><b>On-Chain Audit Log</b> · Immutable trail via <code>contracts.logs()</code> — 9 events, filterable by level, exportable as JSON</sub>
+</td>
+<td align="center" width="50%">
+<img src="screenshots/clean/08-verify-tee.png" alt="DKG attestation verification pipeline" />
+<br/><sub><b>TEE Attestation Verify</b> · Full <code>verifyDkgAttestation()</code> pipeline — ML-KEM key, DKG bundle, TDX quote verification, RTMR3 measurement</sub>
+</td>
+</tr>
+</table>
 
-This app runs on **Railway** using Bun natively — no serverless adapter, no Edge limits, full TypeScript + WASM support out of the box.
-
-```bash
-# 1. Push to GitHub (already done)
-# 2. Go to https://railway.app → New Project → Deploy from GitHub repo
-# 3. Set environment variables (see below)
-# 4. Railway auto-detects Dockerfile and deploys
-```
-
-### Required Environment Variables
-
-| Variable | Description |
-|---|---|
-| `T3N_AGENT_PRIVATE_KEY` | Agent wallet private key (0x...) |
-| `T3N_NODE_URL` | T3 testnet node URL |
-| `DATABASE_URL` | Turso libSQL URL (libsql://...) |
-| `DATABASE_AUTH_TOKEN` | Turso auth token |
-| `AI_GATEWAY_BASE_URL` | Groq/OpenAI-compatible base URL |
-| `AI_GATEWAY_API_KEY` | AI gateway API key |
-| `PORT` | Auto-set by Railway (do not override) |
-
+---
 
 ## Overview
 
-T3 MedAgent is a full-stack AI health agent that runs symptom analysis inside a **Trusted Execution Environment (TEE)** using the Terminal 3 network. Patient data is cryptographically sealed — the agent never exposes raw health inputs outside the TEE.
+T3 MedAgent is a full-stack AI health agent that runs symptom analysis inside a **Trusted Execution Environment (TEE)** on the Terminal 3 network. Patient data is cryptographically sealed — the agent never exposes raw health inputs outside the TEE.
 
-**Live Demo:** https://t3medag-q6kyvag-preview-4200.runable.site/
+Every patient action — identity verification, symptom analysis, delegation grant — is backed by a real T3 SDK primitive call and logged as an immutable on-chain audit event.
 
 ---
 
@@ -45,109 +59,91 @@ T3 MedAgent is a full-stack AI health agent that runs symptom analysis inside a 
 User Browser
      │
      ▼
-React Frontend (Vite + Tailwind)
+React 19 Frontend (Vite 7 + Tailwind 4 + Wouter)
      │
-     ▼ /api/*
-Hono API Server (Node.js / Bun)
+     ▼  /api/*
+Hono API Server (Bun runtime)
      │
      ├──► Terminal 3 TEE Node  (handshake → authenticate → contracts.execute)
-     ├──► T3 Maps              (patient KV store, private visibility)
-     ├──► T3 Tenant            (claimed: medagent-health)
+     ├──► T3 Maps              (maps.create — patient KV, private visibility)
+     ├──► T3 Tenant            (tenant.claim — medagent-health namespace)
      ├──► T3 Delegation VC     (buildDelegationCredential + signAgentInvocation)
-     └──► Turso (libSQL)       (audit trail, delegation records)
+     ├──► T3 OTP               (otpRequest + otpVerify — identity gating)
+     └──► Turso (libSQL)       (audit trail, delegation records, patient data)
 ```
 
 ---
 
-## Terminal 3 SDK Integration — All 17 Primitives
+## Terminal 3 SDK — All 17 Primitives
 
 | # | Primitive | Usage in T3 MedAgent |
 |---|-----------|----------------------|
 | 1 | `setEnvironment("testnet")` | Boot-time network selection |
 | 2 | `loadWasmComponent()` | WASM crypto bootstrap for secp256k1 |
-| 3 | `eth_get_address(privateKey)` | Derive agent wallet `0x171a...f350` |
-| 4 | `metamask_sign(addr, _, key)` | EIP-191 signing handler for session auth |
+| 3 | `eth_get_address(privateKey)` | Derive agent wallet `0x105a...f350` |
+| 4 | `metamask_sign(addr, _, key)` | EIP-191 signing for session auth |
 | 5 | `client.handshake()` | ECDH key exchange with T3 testnet node |
-| 6 | `client.authenticate(createEthAuthInput)` | ETH → DID binding → `did:t3n:189f...` |
+| 6 | `client.authenticate(createEthAuthInput)` | ETH → DID binding → `did:t3n:105a...` |
 | 7 | `tenant.claim()` | Claim `medagent-health` tenant namespace |
 | 8 | `maps.create({ tail, visibility:"private" })` | Per-patient encrypted KV store |
 | 9 | `contracts.publish({ tail, version, wasm })` | Deploy health-check WASM to TEE |
 | 10 | `contracts.execute("health-check", { functionName, input })` | TEE symptom analysis |
-| 11 | `contracts.logs("health-check", { sinceSeq, limit })` | Immutable audit trail |
+| 11 | `contracts.logs("health-check", { sinceSeq, limit })` | Immutable on-chain audit trail |
 | 12 | `buildDelegationCredential({ user_did, agent_pubkey, functions, ... })` | Issue delegation VC |
-| 13 | `signAgentInvocation(preimage, secretBytes)` | Sign invocation preimage |
-| 14 | `client.otpRequest({ emailChannel })` | Identity OTP via email/SMS |
+| 13 | `signAgentInvocation(preimage, secretBytes)` | Sign delegation invocation preimage |
+| 14 | `client.otpRequest({ emailChannel })` | T3 OTP via email/SMS |
 | 15 | `client.otpVerify({ otpCode, request })` | OTP verification gate |
 | 16 | `client.submitUserInput({ profile, becomeDevTenant })` | Patient profile submission |
-| 17 | `verifyDkgAttestation(key, msg, peerIds, quotes)` | TEE node attestation verification |
+| 17 | `verifyDkgAttestation(key, msg, peerIds, quotes)` | TEE node hardware attestation |
 
 **Supporting primitives also used:**
-- `canonicaliseCredential(credential)` — JCS canonical bytes for VC signing
-- `signCredential(jcsBytes, secretKey)` — agent credential self-signing
-- `buildInvocationPreimage(vcId, nonce, reqHash)` — delegation preimage construction
-- `fetchDkgAttestation(nodeUrl)` + `fetchMlKemPublicKey(nodeUrl)` — attestation fetch
-- `createEthAuthInput(address)` — ETH auth input builder
-- `DELEGATION_CREDENTIAL_DOMAIN`, `generateUUID`, `setGlobalLogLevel` — utilities
+`canonicaliseCredential` · `signCredential` · `buildInvocationPreimage` · `fetchDkgAttestation` · `fetchMlKemPublicKey` · `createEthAuthInput` · `DELEGATION_CREDENTIAL_DOMAIN` · `generateUUID` · `setGlobalLogLevel`
 
 ---
 
 ## Features
 
 ### 1. AI Symptom Analysis in TEE
-- Submit symptoms → `contracts.execute()` runs analysis inside TEE
+- Submit symptoms → `contracts.execute()` runs inside T3 TEE node
 - Risk levels: `low / medium / high / critical`
-- Graceful simulation fallback when TEE unavailable
-- Results persisted to Turso audit DB
+- Results tagged with `tee_verified: true` in audit log
+- Auto-triggers hospital booking on `high` / `critical` risk
+- Graceful simulation fallback when TEE node unavailable
 
 ### 2. Patient Onboarding with T3 Identity
-- OTP-gated identity verification (`otpRequest` + `otpVerify`)
+- OTP-gated identity via `otpRequest` + `otpVerify` — real T3 Network email (`t3n@terminal3.io`)
 - Patient profile submitted via `submitUserInput`
-- Per-patient T3 Map created (`maps.create`, private visibility)
-- DID issued on authentication
+- Per-patient T3 Map created with `maps.create` (private visibility)
+- DID issued on `authenticate` → `did:t3n:...` stored and displayed
 
 ### 3. Agent Delegation Credentials
-- Full delegation VC flow: `buildDelegationCredential` → `canonicaliseCredential` → `signCredential` → `signAgentInvocation`
-- Correct SDK constants enforced: `NONCE_LEN=16`, `VC_ID_LEN=16`, `REQUEST_HASH_LEN=32`, `AGENT_PUBKEY_LEN=33`
-- Function-scoped: agent authorized for specific health functions only
-- Delegation records stored on-chain (Turso) with revocation support
+- Full VC flow: `buildDelegationCredential` → `canonicaliseCredential` → `signCredential` → `signAgentInvocation`
+- Byte-length constants enforced: `NONCE_LEN=16`, `VC_ID_LEN=16`, `REQUEST_HASH_LEN=32`, `AGENT_PUBKEY_LEN=33`
+- Function-scoped — agent authorized for specific health functions only
+- Delegation records stored in Turso with revocation support
 
-### 4. Immutable Audit Trail
+### 4. Immutable On-Chain Audit Trail
 - All contract executions logged via `contracts.logs()`
-- Audit events synced to DB and surfaced in UI
-- Filterable by level (info / debug / error)
+- Filterable by level (Info / Debug / Error), exportable as JSON
+- Synced to Turso DB and surfaced in `/audit` page with live refresh
 
 ### 5. TEE Node Attestation Verification
-- Calls `fetchDkgAttestation` + `fetchMlKemPublicKey` + `verifyDkgAttestation`
-- Verifies T3 node is running genuine TEE hardware
-- Exposed in `/verify` page with live verification flow
+- Full pipeline: `fetchDkgAttestation` + `fetchMlKemPublicKey` + `verifyDkgAttestation`
+- Verifies T3 node is running genuine Intel TDX hardware (RTMR3 measurement check)
+- Exposed at `/verify` — live verification flow with step-by-step breakdown
 
-### 6. Rust/WASM Health Contract (TEE-native)
-- **Real compiled Rust WASM binary** (`packages/health-contract/target/wasm32-wasip2/release/health_contract.wasm`, 110KB)
-- Built with `cargo build --target wasm32-wasip2 --release` using `wit-bindgen` + WIT interface
-- WIT world exports: `analyze-symptoms(input: string) -> string` and `generate-report(patient-id: string) -> string`
-- Risk scoring engine embedded in WASM: critical/high/medium/low keyword sets, age escalation (>65 / <5), duration escalation
-- **Auto-published on server boot** via `publishHealthContract(wasmBytes, "1.0.0")` — no manual deploy step
-- Deterministic `djb2` hash used for analysis IDs (no wall clock in TEE)
-
-### 7. Mock Hospital Booking Integration
-- POST `/api/hospital/book` — auto-triggered after `high` or `critical` risk analysis
-- Returns confirmed booking with specialist assignment, slot, and `hospitalRef`
-- Demonstrates real HTTP integration pattern (placeholder hospital API)
-- **Rust source** in `packages/health-contract/src/lib.rs` (build target: `wasm32-wasip2`)
-- Implements the `health-world` WIT interface:
-  - `analyze-symptoms(input: string) → string` — JSON symptom input → risk JSON
-  - `generate-report(patient-id: string) → string` — structured health report
-- Risk scoring: keyword-matched critical/high/medium tiers + age escalation + duration escalation
-- Published automatically on server boot via `contracts.publish()` → then executed in TEE via `contracts.execute()`
-- Build: `cd packages/health-contract && cargo build --target wasm32-wasip2 --release`
+### 6. Real Rust/WASM Health Contract
+- Compiled Rust binary (`health_contract.wasm`, 110KB) targeting `wasm32-wasip2`
+- WIT interface exports: `analyze-symptoms(input: string) → string` and `generate-report(patient-id: string) → string`
+- Risk scoring embedded in WASM: critical/high/medium keyword sets, age + duration escalation
+- Auto-published on server boot via `contracts.publish()` — no manual deploy needed
+- Source: `packages/health-contract/src/lib.rs`
 
 ### 7. Real-Time SMS Health Alerts
-- After every `contracts.execute()` (or high/critical simulation), sends patient an SMS
-- **Africa's Talking** provider (free sandbox tier, no credit card) — default
-- **SMSLeopard fallback** (`api.smsleopard.com`, same API used by competitor Mazingira)
+- Fires after every `high` / `critical` risk analysis
+- Africa's Talking (primary) + SMSLeopard (fallback) dual-provider
 - Alert includes: risk level, recommendation, analysis reference ID
 - Configure via `.env`: `SMS_API_KEY`, `SMS_PROVIDER`, `SMS_API_USERNAME`
-- POST `/api/health/analyze` accepts optional `phone` field to trigger alert
 
 ---
 
@@ -155,24 +151,53 @@ Hono API Server (Node.js / Bun)
 
 | Route | Description |
 |-------|-------------|
-| `/` | Landing — value prop, SDK features, CTA |
-| `/onboard` | Patient identity flow (OTP + profile) |
-| `/dashboard` | AI health agent chat interface |
-| `/audit` | Contract execution audit log |
-| `/delegation` | Delegation VC management |
-| `/verify` | TEE node attestation verification |
+| `/` | Landing — value prop, SDK feature grid, stats, architecture |
+| `/onboard` | Patient identity flow: OTP → verify → profile → DID issued |
+| `/dashboard` | AI health agent chat — TEE analysis, risk results, SDK sidebar |
+| `/audit` | On-chain audit log — filterable, exportable, live from `contracts.logs()` |
+| `/delegation` | Delegation VC management — grant, view, revoke |
+| `/verify` | DKG attestation verification — full hardware TEE proof pipeline |
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** React 19, Vite 7, Tailwind CSS 4, Wouter, TanStack Query
-- **Backend:** Hono (Node.js/Bun), Drizzle ORM, Turso/libSQL
-- **T3 SDK:** `@terminal3/t3n-sdk` v3.5.2 — 17+ primitives used
-- **WASM Contract:** Rust (`wasm32-wasip2`) → WAT → `.wasm` — executed in T3 TEE node
-- **SMS:** Africa's Talking + SMSLeopard — real-time patient health alerts
-- **Fonts:** Syne (headings), Inter (body), JetBrains Mono (code)
-- **Design:** Dark navy `#0A0F1E`, Cyan `#00D4FF`, Violet `#7C3AED`
+| Layer | Tech |
+|-------|------|
+| Frontend | React 19, Vite 7, Tailwind CSS 4, Wouter, TanStack Query |
+| Backend | Hono (Bun runtime), Drizzle ORM |
+| Database | Turso / libSQL (audit trail, delegation, patient records) |
+| T3 SDK | `@terminal3/t3n-sdk` v3.5.2 — 17 primitives + 9 supporting functions |
+| WASM Contract | Rust → `wasm32-wasip2` (wit-bindgen, WIT interface) |
+| SMS | Africa's Talking + SMSLeopard dual-provider |
+| Fonts | Syne (headings), Inter (body), JetBrains Mono (code) |
+| Design | Dark navy `#0A0F1E`, Cyan `#00D4FF`, Violet `#7C3AED` |
+
+---
+
+## Deployment
+
+The app runs on **Render** using Bun natively — no serverless adapter, no Edge size limits, no CJS bundling constraints.
+
+```bash
+# 1. Fork / clone the repo
+# 2. Go to https://render.com → New Web Service → connect repo
+# 3. Build command:  bun install && cd packages/web && bun run build
+# 4. Start command:  bun run start
+# 5. Set environment variables (see below)
+```
+
+### Required Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `T3N_AGENT_PRIVATE_KEY` | Agent wallet private key (`0x...`) |
+| `T3N_NODE_URL` | T3 testnet node URL |
+| `DATABASE_URL` | Turso libSQL URL (`libsql://...`) |
+| `DATABASE_AUTH_TOKEN` | Turso auth token |
+| `AI_GATEWAY_BASE_URL` | Groq / OpenAI-compatible base URL |
+| `AI_GATEWAY_API_KEY` | AI gateway API key |
+| `PORT` | Auto-set by Render (do not override) |
 
 ---
 
@@ -190,6 +215,8 @@ T3N_NODE_URL=https://cn-api.sg.testnet.t3n.terminal3.io
 T3N_TENANT_SCRIPT_NAME=medagent-health
 DATABASE_URL=<your-turso-url>
 DATABASE_AUTH_TOKEN=<your-turso-token>
+AI_GATEWAY_BASE_URL=<your-ai-gateway-url>
+AI_GATEWAY_API_KEY=<your-ai-gateway-key>
 EOF
 
 # Push DB schema
@@ -199,27 +226,29 @@ cd packages/web && bun --env-file=../../.env run db:push
 bun --env-file=../../.env run dev --port 4200
 ```
 
+Open [http://localhost:4200](http://localhost:4200)
+
 ---
 
-## Agent DID
+## Agent Identity
 
 ```
-Agent ETH Address: 0x105a4e13e0262420487244573f5e6a68fb8a57e4
-Agent DID:         did:t3n:105a4e13e0262420487244573f5e6a68fb8a57e4
-Network:           testnet (cn-api.sg.testnet.t3n.terminal3.io)
-Tenant:            medagent-health
+Agent ETH Address:  0x105a4e13e0262420487244573f5e6a68fb8a57e4
+Agent DID:          did:t3n:105a4e13e0262420487244573f5e6a68fb8a57e4
+Network:            testnet (cn-api.sg.testnet.t3n.terminal3.io)
+Tenant:             medagent-health
 ```
 
 ---
 
 ## SDK Bug Report (Bonus)
 
-While building T3 MedAgent we hit **7 real SDK bugs and documentation gaps** — three of which caused silent runtime failures in our production code. All have been documented with type-level proof, real code examples showing the wrong pattern, and the correct fix applied.
+During development we hit **7 real SDK bugs and 2 documentation gaps** — three caused silent runtime failures in production code. All documented with type-level proof, wrong pattern, and correct fix applied.
 
-**→ [Read the full bug report: BUG_REPORT.md](./BUG_REPORT.md)**
+**→ [Full Bug Report: BUG_REPORT.md](./BUG_REPORT.md)**
 
-| Bug | Severity | Description |
-|-----|----------|-------------|
+| ID | Severity | Description |
+|----|----------|-------------|
 | BUG-01 | 🔴 High | `DkgVerifyResult.overall_valid` doesn't exist — should be `.valid` |
 | BUG-02 | 🔴 High | `OtpRequestResult` has no `requestId` — verify correlation undocumented |
 | BUG-03 | 🔴 High | `OtpVerifyResult` has no `verified` field — success detection undocumented |
@@ -234,18 +263,17 @@ While building T3 MedAgent we hit **7 real SDK bugs and documentation gaps** —
 
 ## Why T3 MedAgent Wins
 
-1. **Highest SDK depth** — 17 primitives + 6 supporting functions, all exercised in real flows
-2. **Domain fit** — healthcare is the #1 use case for TEE privacy: HIPAA-adjacent data stays encrypted
-3. **Complete product** — not a demo script; a full web app with DB, auth, audit, delegation, hospital booking
+1. **Highest SDK depth** — 17 primitives + 9 supporting functions, all in real production flows
+2. **Domain fit** — healthcare is the #1 TEE use case: HIPAA-adjacent data stays encrypted in hardware
+3. **Complete product** — full web app with DB, auth, audit, delegation, hospital booking, SMS alerts
 4. **Real Rust/WASM contract** — compiled from Rust to `wasm32-wasip2` with wit-bindgen, auto-deployed on boot
-5. **Delegation flow** — one of the hardest SDK paths implemented correctly with proper byte-length constants
-6. **SMS alerts** — Africa's Talking + SMSLeopard dual-provider, fires after every high/critical analysis
-7. **Auto hospital booking** — high/critical risk triggers immediate appointment booking via mock hospital API
-8. **Graceful fallbacks** — TEE unavailable? Simulation mode. OTP down? Clear error. Node unreachable? Fallback URL.
-9. **Attestation verification** — bonus primitive (#17) implemented and surfaced in UI
-10. **9-bug SDK report** — deepest SDK exploration of any submission, documented with type-level proof
+5. **Delegation flow** — one of the hardest SDK paths, implemented correctly with proper byte-length constants
+6. **SMS alerts** — Africa's Talking + SMSLeopard dual-provider fires after every high/critical analysis
+7. **Attestation verification** — bonus primitive #17 surfaced in UI with full TDX pipeline breakdown
+8. **Graceful fallbacks** — TEE unavailable → simulation mode; OTP down → clear error; node unreachable → fallback URL
+9. **9-item SDK bug report** — deepest SDK exploration of any submission, documented with type-level proof
+10. **Zero serverless limits** — Bun + Render, no Edge constraints, full WASM + top-level await support
 
 ---
 
-*Built with Terminal 3 SDK v3.5.2 | June 2026*
-
+*Built with Terminal 3 SDK v3.5.2 · June 2026 · [sodiq-code/t3-medagent](https://github.com/sodiq-code/t3-medagent)*
