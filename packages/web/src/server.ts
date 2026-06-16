@@ -100,7 +100,12 @@ const server = Bun.serve({
 console.log(`Web server listening on http://localhost:${server.port}`);
 
 // Kick off WASM contract publish in background (non-blocking)
-bootPublishContract().catch(() => {});
+// Disabled in production: loadWasmComponent spawns a Worker that calls
+// process.binding("tcp_wrap") which is not implemented in Bun — crashes the machine.
+// The app works fine without it (simulation fallback in t3-agent.ts).
+if (process.env.NODE_ENV !== "production") {
+  bootPublishContract().catch(() => {});
+}
 
 function getStaticFilePath(pathname: string) {
   const cleanPath = decodeURIComponent(pathname)
