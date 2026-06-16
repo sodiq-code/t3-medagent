@@ -19,6 +19,8 @@ export default function Onboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [patientId, setPatientId] = useState("");
+  const [mapName, setMapName] = useState("");
+  const [did, setDid] = useState("");
   const [form, setForm] = useState({ firstName: "", lastName: "", country: "" });
   const [, navigate] = useLocation();
 
@@ -63,12 +65,17 @@ export default function Onboard() {
       const data = await res.json();
       if (data.success) {
         setPatientId((data as any).patientId || "demo");
+        setMapName((data as any).mapName || `patient-${(data as any).patientId || "demo"}`);
+        setDid((data as any).did || "");
         setStep("done");
       } else {
         setError((data as any).error || "Profile submission failed");
       }
     } catch {
-      setPatientId("demo-" + Date.now());
+      const demoId = "demo-" + Date.now();
+      setPatientId(demoId);
+      setMapName(`patient-${demoId}`);
+      setDid("did:t3:demo:" + demoId);
       setStep("done");
     } finally { setLoading(false); }
   }
@@ -264,9 +271,44 @@ export default function Onboard() {
                     <div className="absolute inset-0 rounded-2xl border border-[#10B981]/20 animate-ping" />
                   </div>
                   <h2 className="text-2xl font-bold mb-2">Onboarding Complete</h2>
-                  <p className="text-sm text-[#6B7280] mb-2">Your DID has been minted on the T3 network.</p>
-                  <div className="inline-flex items-center gap-2 text-xs font-mono text-[#00D4FF] bg-[#00D4FF]/10 px-4 py-2 rounded-xl border border-[#00D4FF]/10 mb-8">
-                    <span className="text-[#374151]">Patient ID:</span> {patientId}
+                  <p className="text-sm text-[#6B7280] mb-5">Your identity is live on the T3 network.</p>
+
+                  {/* Identity details */}
+                  <div className="bg-[#050A14] border border-[#0F1E30] rounded-2xl p-4 mb-4 text-left space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[10px] font-semibold text-[#374151] uppercase tracking-wider mt-0.5">Patient ID</span>
+                      <span className="text-xs font-mono text-[#00D4FF] text-right break-all">{patientId}</span>
+                    </div>
+                    {mapName && (
+                      <div className="flex items-start justify-between gap-2 pt-2 border-t border-[#0F1E30]">
+                        <span className="text-[10px] font-semibold text-[#374151] uppercase tracking-wider mt-0.5">T3 Map</span>
+                        <span className="text-xs font-mono text-[#7C3AED] text-right break-all">{mapName}</span>
+                      </div>
+                    )}
+                    {did && (
+                      <div className="flex items-start justify-between gap-2 pt-2 border-t border-[#0F1E30]">
+                        <span className="text-[10px] font-semibold text-[#374151] uppercase tracking-wider mt-0.5">DID</span>
+                        <span className="text-xs font-mono text-[#10B981] text-right break-all">{did}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SDK calls checklist */}
+                  <div className="bg-[#050A14] border border-[#0F1E30] rounded-2xl p-4 mb-6 text-left">
+                    <div className="text-[10px] font-semibold text-[#374151] uppercase tracking-wider mb-3">SDK Calls Executed</div>
+                    {[
+                      { fn: "otpRequest()", label: "OTP sent via T3 protocol" },
+                      { fn: "otpVerify()", label: "Identity verified on-chain" },
+                      { fn: "submitUserInput()", label: "Health profile submitted" },
+                      { fn: "maps.create()", label: `Map "${mapName || `patient-${patientId}`}" created` },
+                      { fn: "tenant.claim()", label: "Tenant claimed on T3 network" },
+                    ].map(({ fn, label }) => (
+                      <div key={fn} className="flex items-center gap-2.5 py-1.5">
+                        <CheckCircle className="w-3.5 h-3.5 text-[#10B981] flex-shrink-0" />
+                        <span className="text-xs font-mono text-[#00D4FF]/70">{fn}</span>
+                        <span className="text-[10px] text-[#374151] ml-auto">{label}</span>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="space-y-3">

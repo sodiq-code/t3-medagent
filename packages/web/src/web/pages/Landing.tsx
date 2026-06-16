@@ -17,6 +17,8 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="hidden md:block text-sm text-[#6B7280] hover:text-white px-3 py-2 rounded-lg hover:bg-[#0F1E30] transition-all">Dashboard</Link>
+            <Link href="/delegation" className="hidden md:block text-sm text-[#6B7280] hover:text-white px-3 py-2 rounded-lg hover:bg-[#0F1E30] transition-all">Delegation</Link>
             <Link href="/audit" className="hidden md:block text-sm text-[#6B7280] hover:text-white px-3 py-2 rounded-lg hover:bg-[#0F1E30] transition-all">Audit Log</Link>
             <Link href="/verify" className="hidden md:block text-sm text-[#6B7280] hover:text-white px-3 py-2 rounded-lg hover:bg-[#0F1E30] transition-all">Verify TEE</Link>
             <Link href="/onboard">
@@ -42,9 +44,20 @@ export default function Landing() {
         <div className="absolute top-48 right-1/4 w-80 h-80 bg-[#7C3AED]/8 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-[#00D4FF]/10 border border-[#00D4FF]/20 rounded-full px-5 py-2 text-sm text-[#00D4FF] mb-10">
+          <div className="inline-flex items-center gap-2 bg-[#00D4FF]/10 border border-[#00D4FF]/20 rounded-full px-5 py-2 text-sm text-[#00D4FF] mb-4">
             <Zap className="w-3.5 h-3.5" />
             Terminal 3 ADK Bounty · Turing Hackathon 2026
+          </div>
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <span className="inline-flex items-center gap-1.5 bg-[#7C3AED]/10 border border-[#7C3AED]/30 rounded-full px-4 py-1.5 text-xs font-semibold text-[#A78BFA]">
+              <CheckCircle className="w-3 h-3" /> Terminal 3 ADK
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-[#10B981]/10 border border-[#10B981]/30 rounded-full px-4 py-1.5 text-xs font-semibold text-[#34D399]">
+              <Shield className="w-3 h-3" /> Healthcare Vertical
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-[#00D4FF]/10 border border-[#00D4FF]/30 rounded-full px-4 py-1.5 text-xs font-semibold text-[#00D4FF]">
+              <Cpu className="w-3 h-3" /> 17 Primitives
+            </span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.05] mb-7">
@@ -58,7 +71,7 @@ export default function Landing() {
           <p className="text-lg md:text-xl text-[#6B7280] max-w-2xl mx-auto mb-12 leading-relaxed">
             Your medical data analyzed inside a Trusted Execution Environment.
             Zero-knowledge identity. Every action cryptographically verifiable.
-            Powered by <strong className="text-[#9CA3AF]">16 T3 SDK primitives</strong>.
+            Powered by <strong className="text-[#9CA3AF]">17 T3 SDK primitives</strong>.
           </p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
@@ -80,7 +93,7 @@ export default function Landing() {
       <section className="border-y border-[#0F1E30] bg-[#080E1A]">
         <div className="max-w-5xl mx-auto px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
-            { value: "16", label: "SDK Primitives Used" },
+            { value: "17", label: "SDK Primitives Used" },
             { value: "100%", label: "TEE Execution" },
             { value: "163+", label: "On-Chain Audit Txns" },
             { value: "ERC-8004", label: "Agent NFT Standard" },
@@ -155,7 +168,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3">Full SDK Coverage</h2>
-            <p className="text-[#6B7280] text-sm">16 Terminal 3 primitives integrated across the full agent lifecycle</p>
+            <p className="text-[#6B7280] text-sm">17 Terminal 3 primitives integrated across the full agent lifecycle</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
@@ -174,6 +187,7 @@ export default function Landing() {
               { name: "signAgentInvocation", done: true },
               { name: "otpRequest", done: true },
               { name: "otpVerify", done: true },
+              { name: "submitUserInput", done: true },
               { name: "verifyDkgAttestation", done: true },
             ].map(p => (
               <div key={p.name} className="flex items-center gap-2 bg-[#050A14] border border-[#0F1E30] rounded-xl px-3.5 py-3 hover:border-[#00D4FF]/10 transition-all">
