@@ -316,6 +316,75 @@ This example should be in the SDK README or the `buildDelegationCredential` JSDo
 
 ---
 
+## BUG-08 🟡 — `contracts.execute()` returns `string | unknown`, not a typed result
+
+**Category:** Type Safety / Runtime Coercion Required  
+**Severity:** Medium — devs must manually guard and JSON.parse the result  
+
+### Description
+
+`contracts.execute()` is the most critical primitive in the SDK — it runs WASM inside the TEE and returns the output. Yet its return type is effectively `string | unknown` with no typed shape:
+
+```ts
+execute(name: string, input: ContractExecuteInput): Promise<unknown>
+```
+
+The actual runtime behavior: when the WASM function returns a JSON string, the SDK sometimes returns a raw `string`, and sometimes returns an already-parsed object — **with no documentation on which to expect** and no way to predict it from the input.
+
+### Our buggy code (`t3-agent.ts` before fix):
+```ts
+const result = await tenant.contracts.execute("health-check", { ... });
+return result as HealthAnalysisResult;
+// ^ breaks at runtime when result is a JSON string, not an object
+```
+
+### Fix applied:
+```ts
+const result = await tenant.contracts.execute("health-check", { ... });
+if (typeof result === "string") return JSON.parse(result) as HealthAnalysisResult;
+return result as HealthAnalysisResult;
+```
+
+### Suggested SDK Fix
+Return type should reflect reality:
+```ts
+execute<T = unknown>(name: string, input: ContractExecuteInput): Promise<T>;
+```
+And document: *"Result is always parsed JSON — never a raw string."* (or the reverse — just pick one and document it.)
+
+---
+
+## BUG-09 🔵 — `tenant.claim()` idempotency behavior is completely undocumented
+
+**Category:** Documentation Gap  
+**Severity:** Low-Medium — causes confusion in production boot flows  
+
+### Description
+
+`tenant.claim()` is called during patient onboarding. There is **no documentation** on what happens when you call it a second time for a tenant that was already claimed:
+- Does it throw?
+- Does it silently succeed?
+- Does it return a different result shape?
+
+In our production server boot we call `claimTenant()` on every onboarding request. It silently succeeds when already claimed — which is the correct behavior — but we only discovered this through empirical testing, not docs.
+
+The JSDoc says:
+```
+claim(): Promise<TenantClaimResult>
+```
+
+No note on idempotency, no error code for "already claimed", no `alreadyClaimed: boolean` in the result.
+
+### Suggested SDK Fix
+Add to `claim()` JSDoc:
+```
+* @note Idempotent — safe to call multiple times. If the tenant is already claimed
+*   by this agent, returns successfully without modifying state.
+*   To check if a claim already exists, inspect `result.alreadyClaimed`.
+```
+
+---
+
 ## DOC-GAP-02 🔵 — `NODE_URLS` values not shown in docs
 
 **Category:** Documentation Gap  
@@ -353,8 +422,10 @@ export const NODE_URLS: Record<Environment, string> = {
 | BUG-07 | 🔵 Low-Med | Doc gap | ✅ Yes — DID logging |
 | DOC-GAP-01 | 🔵 High impact | Doc gap | ✅ Yes — delegation flow |
 | DOC-GAP-02 | 🔵 Low | Doc gap | ✅ Yes — initial setup |
+| BUG-08 | 🟡 Medium | Type safety / runtime coercion | ✅ Yes — contracts.execute() |
+| BUG-09 | 🔵 Low-Med | Doc gap | ✅ Yes — tenant.claim() boot flow |
 
-All bugs were **discovered organically** while building MantleMed on the T3 ADK. Fixes for BUG-01, BUG-02, and BUG-03 are applied in [`packages/web/src/api/lib/t3-agent.ts`](./packages/web/src/api/lib/t3-agent.ts).
+All bugs were **discovered organically** while building T3 MedAgent on the T3 ADK. Fixes for BUG-01, BUG-02, BUG-03, and BUG-08 are applied in [`packages/web/src/api/lib/t3-agent.ts`](./packages/web/src/api/lib/t3-agent.ts).
 
 ---
 

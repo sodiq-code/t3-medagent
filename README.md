@@ -1,10 +1,20 @@
 # T3 MedAgent — Privacy-Preserving AI Health Navigator
 
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-000000?style=flat&logo=rust&logoColor=white)
+![React](https://img.shields.io/badge/React_19-20232A?style=flat&logo=react&logoColor=61DAFB)
+![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)
+![Hono](https://img.shields.io/badge/Hono-E36002?style=flat&logo=hono&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
+![SQLite](https://img.shields.io/badge/Turso_libSQL-4F46E5?style=flat&logo=sqlite&logoColor=white)
+![WebAssembly](https://img.shields.io/badge/WASM-654FF0?style=flat&logo=webassembly&logoColor=white)
+![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=black)
+
 > **Built for the Terminal 3 ADK Bounty Challenge (Launch Ed.)**  
 > Track: **Healthcare / Privacy-First AI Agents**  
-> SDK Coverage: **17 Primitives** · Deploy: **Render** · Stack: Bun · Hono · React · Turso
+> SDK Coverage: **17 Primitives** · **9 SDK Bugs Reported** · Deploy: **Render**
 
-**Live Demo:** https://t3-medagent.onrender.com
+**Live Demo:** https://t3-medagent.onrender.com &nbsp;|&nbsp; **Demo Video:** https://youtu.be/M2V3KTzdauI
 
 ---
 
@@ -243,7 +253,7 @@ Tenant:             medagent-health
 
 ## SDK Bug Report (Bonus)
 
-During development we hit **7 real SDK bugs and 2 documentation gaps** — three caused silent runtime failures in production code. All documented with type-level proof, wrong pattern, and correct fix applied.
+During development we hit **9 real SDK bugs and documentation gaps** — three caused silent runtime failures in production code. All documented with type-level proof, wrong pattern, and correct fix applied.
 
 **→ [Full Bug Report: BUG_REPORT.md](./BUG_REPORT.md)**
 
@@ -256,6 +266,8 @@ During development we hit **7 real SDK bugs and 2 documentation gaps** — three
 | BUG-05 | 🟡 Medium | SMS OTP silently fails without prior email verification (critical for Africa) |
 | BUG-06 | 🟡 Medium | `contracts.publish()` vs `contracts.register()` — identical signatures, zero docs |
 | BUG-07 | 🔵 Low | `authenticate()` returns `Did` object not `string` — causes `[object Object]` bugs |
+| BUG-08 | 🟡 Medium | `contracts.execute()` returns `string \| unknown` — no typed result, manual JSON.parse required |
+| BUG-09 | 🔵 Low | `tenant.claim()` idempotency behavior completely undocumented — silent success on re-claim |
 | DOC-GAP-01 | 🔵 High | No end-to-end delegation flow example across 5 chained functions |
 | DOC-GAP-02 | 🔵 Low | `NODE_URLS` values not shown anywhere in docs |
 
