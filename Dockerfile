@@ -7,7 +7,6 @@ WORKDIR /app
 # Copy manifests for install caching
 COPY package.json bun.lock ./
 COPY packages/web/package.json ./packages/web/
-COPY packages/health-contract/package.json ./packages/health-contract/
 COPY packages/t3n-sdk/package.json ./packages/t3n-sdk/
 
 # Install all dependencies

@@ -1,0 +1,10 @@
+node_modules
+packages/*/node_modules
+packages/web/dist
+packages/desktop
+packages/mobile
+packages/health-contract/src
+packages/health-contract/target
+.git
+.env*
+*.md
