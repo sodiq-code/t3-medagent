@@ -1,6 +1,6 @@
 # T3 MedAgent — Railway Deployment
 # Bun runs TypeScript natively, no compile step needed for the server
-FROM oven/bun:1.2-alpine
+FROM oven/bun:latest
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY packages/web/package.json ./packages/web/
 COPY packages/t3n-sdk/package.json ./packages/t3n-sdk/
 
 # Install all dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy full source
 COPY . .
