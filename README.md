@@ -253,7 +253,7 @@ Tenant:             medagent-health
 
 ## SDK Bug Report (Bonus)
 
-During development we hit **9 real SDK bugs and documentation gaps** — three caused silent runtime failures in production code. All documented with type-level proof, wrong pattern, and correct fix applied.
+During development, **9 SDK bugs and documentation gaps** were encountered — three of which caused silent runtime failures in production code. Each is documented with type-level proof, the incorrect pattern, and the applied fix.
 
 **→ [Full Bug Report: BUG_REPORT.md](./BUG_REPORT.md)**
 

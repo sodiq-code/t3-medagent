@@ -127,15 +127,15 @@ Patients onboard once. Their identity is theirs — on the T3 network forever.
 | Database | Drizzle ORM + Turso (libSQL) |
 | Identity | Terminal 3 SDK (t3n-sdk) |
 | AI | Claude via T3 AI Gateway |
-| Deploy | Fly.io |
+| Deploy | Render |
 
 ---
 
 ## Live Demo
 
-**App:** https://t3-medagent.fly.dev
+**App:** https://t3-medagent.onrender.com
 
-**Demo Video:** [LINK TO BE ADDED]
+**Demo Video:** https://youtu.be/M2V3KTzdauI
 
 ### Judge walkthrough:
 1. Go to `/onboard` — complete 4-step identity flow (OTP → verify → profile → done)

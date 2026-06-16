@@ -1,7 +1,7 @@
 # Terminal 3 ADK — SDK Bug & Documentation Gap Report
 
 **Submitted by:** Suliyat Azeez (sodiq-code)  
-**Project:** MantleMed — T3 MedAgent  
+**Project:** T3 MedAgent  
 **BUIDL:** t3-medagent  
 **Date:** 2026-06-15  
 **SDK Version:** `@terminal3/t3n-sdk` v3.5.2  
@@ -233,7 +233,7 @@ register(input: ContractPublishInput): Promise<ContractPublishResult>;
 
 Both methods accept the **exact same input type** and return the **exact same result type**. There is **zero JSDoc** on `register()`. No diff between the two is documented anywhere in the SDK.
 
-Our project used `publish()` — but we don't know if `register()` is equivalent, deprecated, an alias, or intended for a different flow (e.g., pre-registration before publish).
+T3 MedAgent uses `publish()` — however, it is unclear whether `register()` is equivalent, deprecated, an alias, or intended for a distinct flow (e.g., pre-registration before publish).
 
 ### Suggested Fix
 Add JSDoc to `register()` clarifying:
@@ -350,7 +350,7 @@ Return type should reflect reality:
 ```ts
 execute<T = unknown>(name: string, input: ContractExecuteInput): Promise<T>;
 ```
-And document: *"Result is always parsed JSON — never a raw string."* (or the reverse — just pick one and document it.)
+And document: *"Result is always parsed JSON — never a raw string."* (or the inverse — either behavior is acceptable, but one must be specified and enforced.)
 
 ---
 
@@ -366,7 +366,7 @@ And document: *"Result is always parsed JSON — never a raw string."* (or the r
 - Does it silently succeed?
 - Does it return a different result shape?
 
-In our production server boot we call `claimTenant()` on every onboarding request. It silently succeeds when already claimed — which is the correct behavior — but we only discovered this through empirical testing, not docs.
+In the production server boot, `claimTenant()` is invoked on every onboarding request. It silently succeeds when the tenant is already claimed — which is the expected behavior — however this was confirmed through empirical testing rather than documentation.
 
 The JSDoc says:
 ```
